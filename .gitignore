@@ -1,0 +1,5 @@
+.claude/
+/PLAN_*.md
+tmp/
+__pycache__/
+*.pyc
