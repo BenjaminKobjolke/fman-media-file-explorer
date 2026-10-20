@@ -5,5 +5,32 @@
   "command_check_scripts": [
     "run_integration_tests.bat",
     "run_tests.bat"
-  ]
+  ],
+  "analysis_commands": [
+    "tools\\run_tests.bat",
+    "tools\\run_integration_tests.bat"
+  ],
+  "analysis_commands_seen": {
+    "scripts": [
+      "run_integration_tests.bat",
+      "run_tests.bat"
+    ],
+    "tests": true
+  },
+  "analysis_command_states": {
+    "tools\\run_tests.bat": {
+      "test": "failed"
+    },
+    "tools\\run_integration_tests.bat": {
+      "test": "failed"
+    }
+  },
+  "analysis_command_failing_tests": {
+    "tools\\run_tests.bat": [
+      "(errors=2)"
+    ],
+    "tools\\run_integration_tests.bat": [
+      "(errors=1)"
+    ]
+  }
 }
