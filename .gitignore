@@ -3,3 +3,11 @@
 tmp/
 __pycache__/
 *.pyc
+tickets/
+HANDOFF.md
+claude-plans/
+PLAN.md
+graphify-out/
+tmp/commit_msg.tmp
+code_analysis_results/
+.reasonix/
