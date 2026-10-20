@@ -1,0 +1,6 @@
+/.git/
+/.pytest_cache/
+/tests/
+/tickets/
+/tmp/
+/tools/
