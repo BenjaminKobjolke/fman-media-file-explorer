@@ -29,3 +29,22 @@ they are intentionally referenced, not imported.
 # graphify
 
 This project's code directory is `media_file_explorer/`.
+
+## Code Analysis
+
+Run the changed-files analyzer after implementing a feature or fixing a bug:
+
+```powershell
+powershell -Command "cd 'C:\Users\XIDA\AppData\Roaming\fman\Plugins\User\fman-media-file-explorer'; cmd /c '.\tools\analyze_changed_and_new_files.bat'"
+```
+
+The changed-files run reports findings only for new or modified files, including untracked files.
+Use the full project scan for an explicit audit or when the working tree is clean:
+
+```powershell
+powershell -Command "cd 'C:\Users\XIDA\AppData\Roaming\fman\Plugins\User\fman-media-file-explorer'; cmd /c '.\tools\analyze_code.bat'"
+```
+
+Both scripts write per-rule reports under `code_analysis_results/` and return a non-zero exit code
+when findings are reported. Copy `tools/analyze_code_config.example.bat` to
+`tools/analyze_code_config.bat` and set the local analyzer path if needed.
