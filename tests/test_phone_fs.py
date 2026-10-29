@@ -16,27 +16,64 @@ class PhoneFilesystemTests(unittest.TestCase):
         self.fs = PhoneFileSystem(self.link)
         self.client = MagicMock(spec=PinnedHttpsClient)
         self.client.get_json.return_value = {
-            'entries': [{'name': 'a.jpg', 'isDirectory': False, 'size': 1, 'modified': 1577836800000}]
+            'entries': [
+                {
+                    'name': 'a.jpg',
+                    'isDirectory': False,
+                    'size': 1,
+                    'modified': 1577836800000,
+                }
+            ]
         }
         self.fs._phones['Pixel'] = self.phone
         self.fs._clients['Pixel'] = self.client
 
     def test_api_path_mapping_and_nested_list(self):
-        self.client.get_json.return_value = {'entries': [{'name': 'DCIM', 'isDirectory': True, 'size': 0, 'modified': 0}]}
+        self.client.get_json.return_value = {
+            'entries': [
+                {
+                    'name': 'DCIM',
+                    'isDirectory': True,
+                    'size': 0,
+                    'modified': 0,
+                }
+            ]
+        }
         self.assertEqual(self.fs._api_path('Pixel/Pictures/DCIM'), '/Pictures/DCIM')
         self.assertEqual(list(self.fs.iterdir('Pixel/Pictures')), ['DCIM'])
         self.client.get_json.assert_called_with('/v1/list', {'path': '/Pictures'})
 
     def test_root_phone_and_share_listings(self):
-        self.client.get_json.return_value = {'entries': [{'name': 'Pictures', 'isDirectory': True, 'size': 0, 'modified': 0}]}
+        self.client.get_json.return_value = {
+            'entries': [
+                {
+                    'name': 'Pictures',
+                    'isDirectory': True,
+                    'size': 0,
+                    'modified': 0,
+                }
+            ]
+        }
         self.assertEqual(list(self.fs.iterdir('')), ['Pixel'])
         self.assertEqual(list(self.fs.iterdir('Pixel')), ['Pictures'])
         self.assertEqual(list(self.fs.iterdir('Pixel/Pictures')), ['Pictures'])
 
     def test_size_and_modified_use_parent_listing(self):
-        self.client.get_json.return_value = {'entries': [{'name': 'a.jpg', 'isDirectory': False, 'size': 12, 'modified': 1577836800000}]}
+        self.client.get_json.return_value = {
+            'entries': [
+                {
+                    'name': 'a.jpg',
+                    'isDirectory': False,
+                    'size': 12,
+                    'modified': 1577836800000,
+                }
+            ]
+        }
         self.assertEqual(self.fs.size_bytes('Pixel/Pictures/a.jpg'), 12)
-        self.assertEqual(self.fs.modified_datetime('Pixel/Pictures/a.jpg').timestamp(), 1577836800)
+        self.assertEqual(
+            self.fs.modified_datetime('Pixel/Pictures/a.jpg').timestamp(),
+            1577836800,
+        )
         self.client.get_json.assert_called_once()
 
     def test_unknown_phone_is_missing(self):

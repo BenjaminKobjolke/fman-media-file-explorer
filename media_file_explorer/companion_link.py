@@ -7,6 +7,7 @@ import uuid
 from fman import load_json, save_json
 from .companion_http import PinnedHttpsClient
 
+
 @dataclass(frozen=True)
 class Phone:
     device_id: str
@@ -18,9 +19,15 @@ class Phone:
 
 class CompanionLink:
     SETTINGS_NAME = 'Media File Explorer Settings.json'
-    def __init__(self):
+
+    def __init__(self) -> None:
         self.settings = load_json(self.SETTINGS_NAME, default={})
-        initial = {'port': 47610, 'client_id': str(uuid.uuid4()), 'client_token': None, 'companion_fingerprint': None}
+        initial = {
+            'port': 47610,
+            'client_id': str(uuid.uuid4()),
+            'client_token': None,
+            'companion_fingerprint': None,
+        }
         changed = False
         for key, value in initial.items():
             if key not in self.settings:
@@ -31,20 +38,33 @@ class CompanionLink:
         self._cached_peers = None
         self._cache_time = 0
 
-    def _save(self):
+    def _save(self) -> None:
         save_json(self.SETTINGS_NAME, self.settings)
 
-    def _request_approval(self):
-        client = PinnedHttpsClient('127.0.0.1', self.settings['port'], self.settings.get('companion_fingerprint'))
+    def _request_approval(self) -> tuple[str, str | None]:
+        client = PinnedHttpsClient(
+            '127.0.0.1',
+            self.settings['port'],
+            self.settings.get('companion_fingerprint'),
+        )
         try:
-            result, fingerprint = client.post_json('/v1/client', {'clientId': self.settings['client_id'], 'name': 'fman'}, timeout=130)
+            result, fingerprint = client.post_json(
+                '/v1/client',
+                {'clientId': self.settings['client_id'], 'name': 'fman'},
+                timeout=130,
+            )
         except PermissionError:
             raise
-        except (OSError, TimeoutError, ConnectionError, http.client.HTTPException) as error:
+        except (
+            OSError,
+            TimeoutError,
+            ConnectionError,
+            http.client.HTTPException,
+        ) as error:
             raise OSError('Media File Explorer companion is not running') from error
         return result['token'], fingerprint
 
-    def _ensure_approved(self):
+    def _ensure_approved(self) -> None:
         if self.settings.get('client_token'):
             return
         token, fingerprint = self._request_approval()
@@ -52,27 +72,57 @@ class CompanionLink:
         self.settings['companion_fingerprint'] = fingerprint
         self._save()
 
-    def _fetch_peers(self):
+    def _fetch_peers(self) -> list[Phone]:
         self._ensure_approved()
-        client = PinnedHttpsClient('127.0.0.1', self.settings['port'], self.settings.get('companion_fingerprint'), self.settings.get('client_token'))
+        client = PinnedHttpsClient(
+            '127.0.0.1',
+            self.settings['port'],
+            self.settings.get('companion_fingerprint'),
+            self.settings.get('client_token'),
+        )
         try:
             result = client.get_json('/v1/peers')
         except PermissionError:
             self.settings['client_token'] = None
             self._save()
             self._ensure_approved()
-            client = PinnedHttpsClient('127.0.0.1', self.settings['port'], self.settings.get('companion_fingerprint'), self.settings.get('client_token'))
+            client = PinnedHttpsClient(
+                '127.0.0.1',
+                self.settings['port'],
+                self.settings.get('companion_fingerprint'),
+                self.settings.get('client_token'),
+            )
             try:
                 result = client.get_json('/v1/peers')
             except PermissionError:
                 raise
-            except (OSError, TimeoutError, ConnectionError, http.client.HTTPException) as error:
+            except (
+                OSError,
+                TimeoutError,
+                ConnectionError,
+                http.client.HTTPException,
+            ) as error:
                 raise OSError('Media File Explorer companion is not running') from error
-        except (OSError, TimeoutError, ConnectionError, http.client.HTTPException) as error:
+        except (
+            OSError,
+            TimeoutError,
+            ConnectionError,
+            http.client.HTTPException,
+        ) as error:
             raise OSError('Media File Explorer companion is not running') from error
-        return [Phone(p['deviceId'], p['name'], p['host'], int(p['port']), p['token'], p['fingerprint']) for p in result.get('peers', [])]
+        return [
+            Phone(
+                p['deviceId'],
+                p['name'],
+                p['host'],
+                int(p['port']),
+                p['token'],
+                p['fingerprint'],
+            )
+            for p in result.get('peers', [])
+        ]
 
-    def peers(self):
+    def peers(self) -> list[Phone]:
         now = time.monotonic()
         if self._cached_peers is None or now - self._cache_time >= 5:
             self._cached_peers = self._fetch_peers()
