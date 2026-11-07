@@ -1,6 +1,7 @@
 """Small stdlib HTTPS client for the companion wire protocol."""
 import hashlib
 import http.client
+import io
 import json
 import os
 import ssl
@@ -10,6 +11,35 @@ from urllib.parse import quote, urlencode
 
 
 ProgressCallback = Callable[[int, int], None]
+FILE_ROUTE = '/v1/file'
+
+
+class _ResponseReader(io.RawIOBase):
+    """Expose an HTTP response as a raw readable stream."""
+
+    def __init__(
+        self,
+        connection: http.client.HTTPSConnection,
+        response: http.client.HTTPResponse,
+    ) -> None:
+        self._connection = connection
+        self._response = response
+
+    def readable(self) -> bool:
+        return True
+
+    def readinto(self, buffer: bytearray | memoryview) -> int | None:
+        return self._response.readinto(buffer)
+
+    def close(self) -> None:
+        if not self.closed:
+            try:
+                self._response.close()
+            finally:
+                try:
+                    self._connection.close()
+                finally:
+                    super().close()
 
 
 class PinnedHttpsClient:
@@ -119,7 +149,7 @@ class PinnedHttpsClient:
         progress_cb: ProgressCallback | None = None,
     ) -> None:
         connection, response = self._request(
-            'GET', '/v1/file', {'path': api_path}, stream=True
+            'GET', FILE_ROUTE, {'path': api_path}, stream=True
         )
         total, received = int(response.getheader('Content-Length') or -1), 0
         try:
@@ -143,7 +173,7 @@ class PinnedHttpsClient:
         progress_cb: ProgressCallback | None = None,
     ) -> None:
         length = os.path.getsize(local_path)
-        path = '/v1/file?' + urlencode({'path': api_path}, quote_via=quote)
+        path = FILE_ROUTE + '?' + urlencode({'path': api_path}, quote_via=quote)
         connection = self._connect()
         try:
             connection.putrequest('PUT', path)
@@ -167,3 +197,11 @@ class PinnedHttpsClient:
             response.read()
         finally:
             connection.close()
+
+    def open_file(self, api_path: str) -> io.BufferedReader:
+        connection, response = self._request(
+            'GET', FILE_ROUTE, {'path': api_path}, stream=True
+        )
+        return io.BufferedReader(
+            _ResponseReader(connection, response), self.CHUNK_SIZE
+        )

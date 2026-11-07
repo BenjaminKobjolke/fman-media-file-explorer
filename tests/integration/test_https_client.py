@@ -38,6 +38,7 @@ class Handler(http.server.BaseHTTPRequestHandler):
         elif route.path == '/v1/file':
             value = self.data.get(parse_qs(route.query).get('path', [''])[0])
             self.send_response(200 if value is not None else 404)
+            self.send_header('Content-Length', str(len(value or b'')))
             self.end_headers()
             if value is not None:
                 self.wfile.write(value)
@@ -110,6 +111,15 @@ class PinnedHttpsIntegrationTests(unittest.TestCase):
             '/v1/rename', {'from': '/share/a.txt', 'to': '/share/c.txt'}
         )
         self.client.delete('/v1/entry', {'path': '/share/c.txt'})
+
+    def test_open_file_stream_and_missing_file(self):
+        Handler.data['/share/a.txt'] = b'hello'
+        with self.client.open_file('/share/a.txt') as source:
+            self.assertEqual(source.read(), b'hello')
+
+        with self.assertRaises(FileNotFoundError):
+            self.client.open_file('/share/missing')
+
     def test_wrong_fingerprint_never_reaches_handler(self):
         before = Handler.hits
         bad = PinnedHttpsClient('127.0.0.1', self.server.server_port, '0' * 64, 'token')

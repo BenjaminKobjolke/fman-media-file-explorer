@@ -106,7 +106,7 @@ class PhoneTransfers:
         if not self.fs.exists(path):
             self.fs.mkdir(path)
 
-    def _upload_and_notify(
+    def upload_and_notify(
         self,
         local: str,
         remote: str,
@@ -201,7 +201,7 @@ class _UploadTask(Task):
         self.local_path = local_path
         self.remote_path = remote_path
     def __call__(self) -> None:
-        self.transfers._upload_and_notify(
+        self.transfers.upload_and_notify(
             self.local_path, self.remote_path, self._update
         )
 

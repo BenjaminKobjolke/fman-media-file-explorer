@@ -2,7 +2,7 @@
 from datetime import datetime
 from io import UnsupportedOperation
 import posixpath
-from typing import Any, Iterable, Mapping
+from typing import Any, BinaryIO, Iterable, Mapping
 
 from fman.fs import FileSystem, cached
 from fman import Task
@@ -117,6 +117,11 @@ class PhoneFileSystem(FileSystem):
             raise FileNotFoundError(self.scheme + clean)
         return normalize(self.scheme + clean)
 
+    def open(self, path: str, mode: str) -> BinaryIO:
+        from .phone_streams import open_phone_file
+
+        return open_phone_file(self, path, mode)
+
     def size_bytes(self, path: str) -> int | None:
         entry = self._entry(path)
         return None if entry.get('isDirectory') else entry.get('size')
@@ -138,6 +143,8 @@ class PhoneFileSystem(FileSystem):
         parts = self._parts(path)
         if len(parts) < 3:
             raise UnsupportedOperation('Phone and share roots cannot be created')
+        if self.exists(path):
+            raise FileExistsError(path)
         self._client(parts[0]).post_json('/v1/mkdir', {'path': self._api_path(path)})
         self._invalidate(path)
         self.notify_file_added(path)
