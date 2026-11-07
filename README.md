@@ -10,6 +10,6 @@ The Media File Explorer desktop companion must be running with the local-client 
 
 The fman settings file `Media File Explorer Settings.json` stores the companion port (default `47610`), a stable client ID, the client approval token and the pinned companion certificate fingerprint. Do not share the token or settings file.
 
-Limits: phone trash is unavailable, so delete is permanent; phone-to-phone copy is unsupported; transfers copy whole files. Recursive folder transfers create folders before copying their contents.
+Limits: phone trash is unavailable, so delete is permanent; phone-to-phone copy is unsupported; transfers copy whole files. Recursive folder transfers create folders before copying their contents. With an fman++ build that includes the streaming fallback from #317, files and folders can also be copied and moved between a phone and archives, FTP or other plugins. A file being written reaches the phone only after the complete file has been received.
 
 Run the unit tests with `tools\\run_tests.bat` and the TLS integration tests with `tools\\run_integration_tests.bat`. Both scripts use the fman's `FMAN_SRC` environment variable and the repository root on `PYTHONPATH`.
